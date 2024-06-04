@@ -5,39 +5,66 @@
  * Description: Simple little compiler.
  */
 #include "includes/TaskScheduler.h"
+#include <thread>
+#include <stdexcept>
 
-std::vector<std::thread> TaskScheduler::active_tasks;
+static int32_t last_id;
 
-void TaskScheduler::AddTask(std::thread&& task) {
-  active_tasks.emplace_back(std::move(task));
+std::unordered_map<int32_t, std::thread> TaskScheduler::test = {};
+
+THANDLE* TaskScheduler::AddTask(std::thread&& task)
+{
+  auto* handle = new THANDLE(last_id++);
+  test.emplace(handle->task_id, std::move(task));
+  return handle;
 }
 
-void TaskScheduler::RemoveTask(std::thread& task) {
-  auto it = std::find_if(active_tasks.begin(), active_tasks.end(), [&](const std::thread& t) {
-    return std::addressof(t) == std::addressof(task);
-  });
+void TaskScheduler::RemoveTask(THANDLE* handle)
+{
+  auto it = test.find(handle->task_id);
 
-  if (it != active_tasks.end()) {
-    it->detach();
-    active_tasks.erase(it);
+  if(it != test.end())
+  {
+    if(it->second.joinable())
+    {
+      it->second.detach();
+    }
+    test.erase(it);
+  }
+}
+void TaskScheduler::JoinTask(THANDLE* handle)
+{
+  auto it = test.find(handle->task_id);
+
+  if(it != test.end())
+  {
+    if(it->second.joinable())
+    {
+      it->second.join();
+    }
+    test.erase(it);
   }
 }
 
-
-void TaskScheduler::JoinTask(std::thread& task) {
-  auto it = std::find_if(active_tasks.begin(), active_tasks.end(), [&](const std::thread& t) {
-    return std::addressof(t) == std::addressof(task);
-  });
-
-  if (it != active_tasks.end()) {
-    it->join();
-    active_tasks.erase(it);
+void TaskScheduler::JoinAllTasks()
+{
+  for(auto& pair : test)
+  {
+    if(pair.second.joinable())
+    {
+      pair.second.join();
+    }
   }
+  test.clear();
 }
 
-void TaskScheduler::JoinAllTasks() {
-  for (auto& task : active_tasks) {
-    task.join();
+std::pair<const int32_t, std::thread>& TaskScheduler::get_thread_by_handle(THANDLE* handle)
+{
+  auto it = test.find(handle->task_id);
+  if(it != test.end())
+  {
+    return *it;
   }
-  active_tasks.clear();
+
+  throw std::invalid_argument("Fatal: THANDLE Not Found in Scheduler");
 }

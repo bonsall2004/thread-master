@@ -6,86 +6,111 @@
 #include <map>
 #include <thread>
 #include "TaskScheduler.h" // Include your TaskScheduler header file
-
+#define CAT_(A, B) A ## B
+#define CAT(A, B) CAT_(A, B)
 
 template <typename... Args>
-class Dispatcher {
-public:
-  using Callback = std::function<void(Args...)>;
+class Dispatcher
+{
+  public:
+    using Callback = std::function<void(Args...)>;
 
-  Dispatcher() = default;
+    Dispatcher() = default;
 
-  explicit Dispatcher(std::string name) : name(name) {
-    dispatchers[name] = this;
-  }
-
-  explicit Dispatcher(Callback callback) {
-    callbacks.push_back(callback);
-  }
-
-  Dispatcher(std::string name, Callback callback) : name(name) {
-    dispatchers[name] = this;
-    callbacks.push_back(callback);
-  }
-
-  ~Dispatcher() {
-    if (name.empty()) return;
-    auto it = dispatchers.find(name);
-    if (it != dispatchers.end()) {
-      dispatchers.erase(it);
+    explicit Dispatcher(std::string name) : name(name)
+    {
+      dispatchers[name] = this;
     }
-  }
 
-  static Dispatcher* GetEventByName(const std::string& name) {
-    auto it = dispatchers.find(name);
-    if (it != dispatchers.end()) {
-      return it->second;
-    } else {
-      return nullptr;
+    explicit Dispatcher(Callback callback)
+    {
+      callbacks.push_back(callback);
     }
-  }
 
-  void SetTimer(int64_t time, Args... args) {
-    TaskScheduler::AddTask(std::thread([time, args..., this]() {
-      std::this_thread::sleep_for(std::chrono::seconds(time));
-      Dispatch(args...);
-    }));
-  }
+    Dispatcher(std::string name, Callback callback) : name(name)
+    {
+      dispatchers[name] = this;
+      callbacks.push_back(callback);
+    }
 
-  [[maybe_unused]] static bool CallEventByName(const std::string& name, Args... args) {
-    Dispatcher* event = GetEventByName(name);
-    if (event == nullptr) return false;
-    event->Dispatch(args...);
-    return true;
-  }
+    ~Dispatcher()
+    {
+      if(name.empty()) return;
+      auto it = dispatchers.find(name);
+      if(it != dispatchers.end())
+      {
+        dispatchers.erase(it);
+      }
+    }
 
-  [[maybe_unused]] void AddListener(Callback callback) {
-    callbacks.push_back(callback);
-  }
+    static Dispatcher* GetEventByName(const std::string& name)
+    {
+      auto it = dispatchers.find(name);
+      if(it != dispatchers.end())
+      {
+        return it->second;
+      }
+      else
+      {
+        return nullptr;
+      }
+    }
 
-  [[maybe_unused]] void DispatchAsync(Args... args) {
-    for (auto& callback : callbacks) {
-      TaskScheduler::AddTask(std::thread([callback, args...](){
-        callback(args...);
+    void SetTimer(int64_t time, Args... args)
+    {
+      TaskScheduler::AddTask(std::thread([time, args..., this]()
+      {
+        std::this_thread::sleep_for(std::chrono::seconds(time));
+        Dispatch(args...);
       }));
     }
-  }
 
-  void Dispatch(Args... args) {
-    for (auto& callback : callbacks) {
-      callback(args...);
+    [[maybe_unused]] static bool CallEventByName(const std::string& name, Args... args)
+    {
+      Dispatcher* event = GetEventByName(name);
+      if(event == nullptr) return false;
+      event->Dispatch(args...);
+      return true;
     }
-  }
 
-  [[maybe_unused]] void JoinAllTasks() {
-    TaskScheduler::JoinAllTasks();
-  }
+    [[maybe_unused]] void AddListener(Callback callback)
+    {
+      callbacks.push_back(callback);
+    }
 
-private:
-  std::string name;
-  std::vector<Callback> callbacks;
-  static std::map<std::string, Dispatcher*> dispatchers;
+    [[maybe_unused]] void DispatchAsync(Args... args)
+    {
+      for(auto& callback : callbacks)
+      {
+        TaskScheduler::AddTask(std::thread([callback, args...]()
+        {
+          callback(args...);
+        }));
+      }
+    }
+
+    void Dispatch(Args... args)
+    {
+      for(auto& callback : callbacks)
+      {
+        callback(args...);
+      }
+    }
+
+  private:
+    std::string name;
+    std::vector<Callback> callbacks;
+    static std::map<std::string, Dispatcher*> dispatchers;
 };
 
-template <typename... Args>
-std::map<std::string, Dispatcher<Args...>*> Dispatcher<Args...>::dispatchers;
+template <typename... Args> std::map<std::string, Dispatcher<Args...>*> Dispatcher<Args...>::dispatchers;
+
+// Put this at the bottom of the file
+#define REGISTER_CALLBACK_WITH_DISPATCHER(x, y) namespace {\
+  struct CAT(x, __LINE__) {                                \
+    CAT(x, __LINE__)() {                                   \
+      (x).AddListener(y);                                  \
+    };                                                     \
+  };                                                       \
+  static CAT(x, __LINE__) CAT(m_,__LINE__);                \
+  }

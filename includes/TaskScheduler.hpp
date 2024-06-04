@@ -72,31 +72,7 @@ namespace thread_master
   };
 }
 
-#define cute_map(x, y) std::vector<std::pair<x, y>> // This is because unordered_map FUCKING HATES ME :
-
 using namespace thread_master;
-
-namespace std
-{
-  template <>
-  struct hash<THANDLE>
-  {
-    std::size_t operator()(const THANDLE& handle) const
-    {
-      return std::hash<int32_t>()(handle.task_id);
-    }
-  };
-
-  template <>
-  struct equal_to<THANDLE>
-  {
-    bool operator()(const THANDLE& lhs, const THANDLE& rhs) const
-    {
-      return lhs.task_id == rhs.task_id;
-    }
-  };
-}
-
 class TaskScheduler
 {
   public:

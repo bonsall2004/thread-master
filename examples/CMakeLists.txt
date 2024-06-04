@@ -5,6 +5,8 @@ option(BUILD_EXAMPLES "Enable Examples" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../binaries)
+
 if(BUILD_EXAMPLES)
   message(STATUS "Examples enabled")
   

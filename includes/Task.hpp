@@ -7,7 +7,7 @@
 #include <vector>
 #include <thread>
 #include <functional>
-#include "TaskScheduler.h"
+#include "TaskScheduler.hpp"
 #include <cstdint>
 
 template <typename... Args>

@@ -6,6 +6,6 @@
  */
 
 #pragma once
-#include <Task.h>
-#include <Dispatcher.h>
-#include <TaskScheduler.h>
+#include <Task.hpp>
+#include <Dispatcher.hpp>
+#include <TaskScheduler.hpp>

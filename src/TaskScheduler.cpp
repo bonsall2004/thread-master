@@ -4,7 +4,7 @@
  * Repository: https://github.com/bonsall2004/lumos-compiler
  * Description: Simple little compiler.
  */
-#include "includes/TaskScheduler.h"
+#include "TaskScheduler.hpp"
 #include <thread>
 #include <stdexcept>
 

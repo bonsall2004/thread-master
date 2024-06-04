@@ -4,30 +4,32 @@
  * Description: 
  */
 #include <cstdio>
-#include <Task.h>
-#include <Dispatcher.h>
-//#include <MemDBG>
+#include <Task.hpp>
+#include <Dispatcher.hpp>
 
-Dispatcher<> Beans;
+DEFINE_DISPATCHER(event);
+DEFINE_DISPATCHER(event2, volatile bool*);
 
 void testFunc()
 {
-  printf("Testt\n");
+  static int yes = 0;
+  printf("Message #%d\n", yes++);
 }
 
-void testFunc1()
+void testFunc1(volatile bool* disable)
 {
-  printf("Tomatoes are disgusting\n");
+  *disable = false;
 }
 
 int main()
 {
-  Beans.SetTimer(1);
-  Beans.DispatchAsync();
+  auto event_timer = event.SetPeriodicTimer(std::chrono::milliseconds(100));
+  event2.SetTimer(7, event_timer);
 
   TaskScheduler::JoinAllTasks();
+  delete event_timer;
   return 0;
 }
 
-REGISTER_CALLBACK_WITH_DISPATCHER(Beans, testFunc);
-REGISTER_CALLBACK_WITH_DISPATCHER(Beans, testFunc1);
+REGISTER_CALLBACK_WITH_DISPATCHER(event, testFunc);
+REGISTER_CALLBACK_WITH_DISPATCHER(event2, testFunc1);

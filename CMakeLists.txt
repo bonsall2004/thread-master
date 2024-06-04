@@ -4,11 +4,13 @@ set(LIB_NAME thread_master)
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../../binaries)
+
 add_library(${LIB_NAME}
-            includes/Task.h includes/Dispatcher.h
-            TaskScheduler.cpp
-            includes/TaskScheduler.h
-            includes/MemDBG)
+            includes/Task.hpp includes/Dispatcher.hpp
+            src/TaskScheduler.cpp
+            includes/TaskScheduler.hpp
+            )
 
 add_subdirectory(examples)
 

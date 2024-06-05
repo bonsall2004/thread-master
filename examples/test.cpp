@@ -28,6 +28,9 @@ void test()
 
 int main()
 {
+  Task<int> test = Task<int>([&](int test){
+      std::cout << test << std::endl;
+  }, 10);
   auto event_timer = event.SetPeriodicTimer(1);
 
   Dispatcher<>::SetTimer(5, event_timer);

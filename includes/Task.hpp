@@ -16,11 +16,11 @@ class Task
   public:
     using Callback = std::function<void(Args...)>;
 
-    explicit Task(Callback callback, Args... args)
+    explicit Task(Callback callback, Args&&... args)
     {
-      TaskThread = std::thread([callback, args...]()
+      TaskThread = std::thread([callback = std::move(callback), ...args = std::forward<Args>(args)]() mutable
       {
-        callback(args...);
+        callback(std::forward<Args>(args)...);
       });
       handle = (THANDLE*)TaskScheduler::AddTask(std::move(TaskThread));
     }

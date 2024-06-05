@@ -143,26 +143,21 @@ void myCallback(int arg1, int arg2, float arg3) {
 }
 
 int main() {
-    // Register the callback with the dispatcher
-    REGISTER_CALLBACK_WITH_DISPATCHER(MyDispatcher, myCallback);
-
     // Trigger an event with arguments
     MyDispatcher.Dispatch(10, 20, 3.14f);
 
     // Set a timer to trigger an event after 2 seconds
-    MyDispatcher.SetTimer(2000, 30, 40, 6.28f);
+    MyDispatcher.SetTimer(2, 30, 40, 6.28f);
 
-    // Set a periodic timer to trigger an event every 1 second
-    volatile bool* stopTimer = MyDispatcher.SetPeriodicTimer(1000, 50, 60, 9.42f);
-
-    // Wait for 5 seconds
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    // Stop the periodic timer
-    *stopTimer = false;
-
+    // Set a periodic timer to trigger an event every  second
+    std::function<void()> stopTimer = MyDispatcher.SetPeriodicTimer(std::chrono::milliseconds(1000), 50, 60, 9.42f);
+    
+    Dispatcher::SetTimer(5, stopTimer);
+    
     return 0;
 }
+
+REGISTER_CALLBACK_WITH_DISPATCHER(MyDispatcher, myCallback);
 ```
 
 This demonstrates the usage of dispatchers and their associated methods for managing events and callbacks in a multithreaded environment.

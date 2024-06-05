@@ -57,15 +57,6 @@ class Dispatcher
       }
     }
 
-    void SetTimer(int64_t time, Args... args)
-    {
-      TaskScheduler::AddTask(std::thread([time, args..., this]()
-      {
-        std::this_thread::sleep_for(std::chrono::seconds(time));
-        Dispatch(args...);
-      }));
-    }
-
     void SetTimer(std::chrono::milliseconds ms, Args... args)
     {
       TaskScheduler::AddTask(std::thread([ms, args..., this]()
@@ -75,7 +66,16 @@ class Dispatcher
       }));
     }
 
-    [[nodiscard]] volatile bool* SetPeriodicTimer(std::chrono::milliseconds interval, Args... args)
+    static void SetTimer(std::chrono::milliseconds ms, Callback callback, Args... args)
+    {
+      TaskScheduler::AddTask(std::thread([&, ms, callback, args...]()
+      {
+        std::this_thread::sleep_for(ms);
+        callback(args...);
+      }));
+    }
+
+    [[nodiscard]] Callback SetPeriodicTimer(std::chrono::milliseconds interval, Args... args)
     {
       volatile bool* bIsLooping = new bool(true);
       TaskScheduler::AddTask(std::thread([interval, bIsLooping, args..., this]()
@@ -88,10 +88,41 @@ class Dispatcher
         while(*bIsLooping);
       }));
 
-      return bIsLooping;
+      return [bIsLooping]() { *bIsLooping = false; };
     }
 
-    [[nodiscard]] volatile bool* SetPeriodicTimer(uint64_t interval, Args... args)
+    [[nodiscard]] static Callback SetPeriodicTimer(std::chrono::milliseconds interval, Callback callback, Args... args)
+    {
+      volatile bool* bIsLooping = new bool(true);
+      TaskScheduler::AddTask(std::thread([interval, bIsLooping, callback, args...]()
+      {
+        do
+        {
+          std::this_thread::sleep_for(interval);
+          callback(args...);
+        }
+        while(*bIsLooping);
+      }));
+
+      return [bIsLooping]() { *bIsLooping = false; };
+    }
+
+    void SetTimer(int64_t time, Args... args)
+    {
+      SetTimer(std::chrono::milliseconds(time * 1000), args...);
+    }
+
+    static void SetTimer(int64_t time, Callback callback, Args... args)
+    {
+      SetTimer(std::chrono::milliseconds(time * 1000), callback, args...);
+    }
+
+    [[nodiscard]] static Callback SetPeriodicTimer(uint64_t interval, Callback callback, Args... args)
+    {
+      return SetPeriodicTimer(std::chrono::milliseconds(interval * 1000), callback, args...);
+    }
+
+    [[nodiscard]] Callback SetPeriodicTimer(uint64_t interval, Args... args)
     {
       return SetPeriodicTimer(std::chrono::milliseconds(interval * 1000), args...);
     }
@@ -133,6 +164,7 @@ class Dispatcher
     std::string name;
     std::vector<Callback> callbacks;
     static std::map<std::string, Dispatcher*> dispatchers;
+    volatile bool* p_bIsLooping = new bool(false);
 };
 
 template <typename... Args> std::map<std::string, Dispatcher<Args...>*> Dispatcher<Args...>::dispatchers;

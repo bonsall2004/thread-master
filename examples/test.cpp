@@ -21,15 +21,19 @@ void testFunc1(volatile bool* disable)
   *disable = false;
 }
 
+void test()
+{
+  std::cout << "running statically" << std::endl;
+}
+
 int main()
 {
-  auto event_timer = event.SetPeriodicTimer(std::chrono::milliseconds(100));
-  event2.SetTimer(7, event_timer);
+  auto event_timer = event.SetPeriodicTimer(1);
+
+  Dispatcher<>::SetTimer(5, event_timer);
 
   TaskScheduler::JoinAllTasks();
-  delete event_timer;
   return 0;
 }
 
 REGISTER_CALLBACK_WITH_DISPATCHER(event, testFunc);
-REGISTER_CALLBACK_WITH_DISPATCHER(event2, testFunc1);
